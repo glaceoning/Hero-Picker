@@ -269,27 +269,6 @@ class ModelTeam {
         }
     }
 
-    filterHero(nick) {
-        nick = nick.toLowerCase();
-
-        for (let h in this.heroes) {
-            let nicks = this.heroes[h].nicks;
-
-            //Make easy to find the hero nick forcing all to be lowercase
-            nicks = nicks.map(function (nick) {
-                return nick.toLowerCase();
-            });
-
-            let found = nicks.find((element) => element == nick);
-
-            if (found) {
-                this.heroes[h].filtered = true;
-            } else {
-                this.heroes[h].filtered = false;
-            }
-        }
-    }
-
     isRoleFiltered(role) {
         //Check if Hero is filtered and avoid cleaning the role that don't belongs to the hero
         let isFiltered = false;

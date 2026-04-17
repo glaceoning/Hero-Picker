@@ -29,8 +29,6 @@ class ControllerOverPiker {
         this.model.bindSelectionsChanged(this.onSelectionsChanged);
         this.view.bindEditSelected(this.handleEditSelected);
 
-        this.view.bindHeroFilter(this.handleFilter);
-
         //Bind controller with HeroeSelection
         this.model.bindSelectedHeroesChanged(this.onSelectedHeroesChanged);
         this.view.bindSelectedHeroes(this.handleSelectedHeroes);
@@ -104,11 +102,6 @@ class ControllerOverPiker {
 
     handleGearOptions = () => {
         this.model.toggleGearOptions();
-    };
-
-    handleFilter = (nick, team) => {
-        this.model.filterHero(nick, team);
-        this.model.editSelectedHeroes();
     };
 
     handleEditSelected = (id, selIndex) => {

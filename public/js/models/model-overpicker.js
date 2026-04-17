@@ -695,10 +695,6 @@ class ModelOverPiker {
         this._commitSelections(this.panelSelections, this.gearOptionsState);
     }
 
-    filterHero(nick, team) {
-        this.teams[team].filterHero(nick);
-    }
-
     switchTeamSize() {
         this.selectedHeroes.forEach((team) => {
             if (

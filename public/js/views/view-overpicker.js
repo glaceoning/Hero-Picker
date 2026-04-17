@@ -120,23 +120,6 @@ class ViewOverPiker {
             "sm:row-start-5"
         );
 
-        //Filters
-        this.blueFilter = this.createElement(
-            "div",
-            "heroes-filter",
-            "heroes-filter-blue",
-            "hidden"
-        );
-        this.blueFilter.classList.add(
-            "mt-5",
-            "text-sm",
-            "text-center",
-            "sm:text-left",
-            "sm:col-start-1",
-            "sm:col-end-2",
-            "sm:row-start-6"
-        );
-
         //Hero per Rol Options
         this.blueTankRolSelection = this.createElement(
             "div",
@@ -215,22 +198,6 @@ class ViewOverPiker {
             "sm:row-start-5"
         );
 
-        this.redFilter = this.createElement(
-            "div",
-            "heroes-filter",
-            "heroes-filter-red"
-        );
-        this.redFilter.classList.add(
-            "enemy-team-direction",
-            "mt-5",
-            "text-sm",
-            "text-center",
-            "sm:text-right",
-            "sm:col-start-3",
-            "sm:col-end-4",
-            "sm:row-start-6"
-        );
-
         this.blueSupportRolSelection.classList.add("rol-selection-support");
         this.redTankRolSelection = this.createElement(
             "div",
@@ -289,7 +256,6 @@ class ViewOverPiker {
 
         this.calculator.append(this.blueTeamScore);
         this.calculator.append(this.teamBlueComposition);
-        this.calculator.append(this.blueFilter);
         this.calculator.append(this.blueTankRolSelection);
         this.calculator.append(this.blueDamageRolSelection);
         this.calculator.append(this.blueSupportRolSelection);
@@ -298,12 +264,29 @@ class ViewOverPiker {
 
         this.calculator.append(this.redTeamScore);
         this.calculator.append(this.teamRedComposition);
-        this.calculator.append(this.redFilter);
         this.calculator.append(this.redTankRolSelection);
         this.calculator.append(this.redDamageRolSelection);
         this.calculator.append(this.redSupportRolSelection);
 
-        this.displayFilters();
+        this._appendQuickAddHint();
+    }
+
+    _appendQuickAddHint() {
+        const hint = this.createElement("div");
+        hint.classList.add(
+            "sm:col-span-3",
+            "mt-6",
+            "mb-2",
+            "text-center",
+            "text-sm",
+            "text-slate-400",
+            "poppins",
+            "select-none"
+        );
+        hint.innerHTML =
+            'Press <kbd class="px-1.5 py-0.5 border border-slate-500 rounded text-xs">Q</kbd> ' +
+            'to Quick Add heroes by keyboard.';
+        this.calculator.append(hint);
     }
 
     createElement(tag, className, id) {
@@ -730,33 +713,6 @@ class ViewOverPiker {
         }
     }
 
-    displayFilters() {
-        while (this.blueFilter.firstChild) {
-            this.blueFilter.removeChild(this.blueFilter.firstChild);
-        }
-
-        while (this.redFilter.firstChild) {
-            this.redFilter.removeChild(this.redFilter.firstChild);
-        }
-
-        const blueInput = this.createElement("input", "", "blue-hero-filter");
-        blueInput.classList.add("mx-1", "text-black");
-
-        blueInput.type = "text";
-        blueInput.name = "filter";
-        blueInput.placeholder = "Genji";
-
-        const redInput = this.createElement("input", "", "red-hero-filter");
-        redInput.classList.add("mx-1");
-
-        redInput.type = "text";
-        redInput.name = "filter";
-        redInput.placeholder = "Genji";
-
-        this.blueFilter.append("Filter:", blueInput);
-        this.redFilter.append("Filter:", redInput);
-    }
-
     displayHeroRoles(teams, iconOption) {
         while (this.blueTankRolSelection.firstChild) {
             this.blueTankRolSelection.removeChild(
@@ -1065,22 +1021,6 @@ class ViewOverPiker {
                 const selIndex = event.target.options.selectedIndex;
                 handler(id, selIndex);
             }
-        });
-    }
-
-    bindHeroFilter(handler) {
-        this.blueFilter.addEventListener("input", (event) => {
-            //The Input is easy to get with the ID
-            let nick = document.getElementById("blue-hero-filter").value;
-
-            handler(nick, "Blue");
-        });
-
-        this.redFilter.addEventListener("input", (event) => {
-            //The Input is easy to get with the ID
-            let nick = document.getElementById("red-hero-filter").value;
-
-            handler(nick, "Red");
         });
     }
 

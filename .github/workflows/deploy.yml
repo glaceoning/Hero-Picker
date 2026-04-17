@@ -1,0 +1,70 @@
+name: Deploy Hero Picker to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Assemble static site
+        run: |
+          set -euo pipefail
+          rm -rf dist
+          mkdir -p dist/css dist/js dist/images
+
+          # Static HTML entrypoint (no Laravel/Blade)
+          cp gh-pages/index.html dist/index.html
+
+          # JS modules and images served straight from public/
+          cp -r public/js/. dist/js/
+          cp -r public/images/. dist/images/
+          if [ -f public/favicon.ico ]; then cp public/favicon.ico dist/favicon.ico; fi
+          if [ -f public/robots.txt ]; then cp public/robots.txt dist/robots.txt; fi
+
+          # Build Tailwind CSS. tailwind.config.js scans resources/ and public/**/*.js,
+          # so Quick Add classes are picked up from public/js/views/view-quick-add.js.
+          npx tailwindcss -c tailwind.config.js -i resources/css/app.css -o dist/css/app.css --minify
+
+          # GitHub Pages auto-disables Jekyll, but .nojekyll makes it explicit so
+          # files/folders starting with "_" aren't filtered out.
+          touch dist/.nojekyll
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

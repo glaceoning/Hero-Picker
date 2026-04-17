@@ -10,6 +10,7 @@ import { API_URL, JSON_URL } from "./utils/constants.js";
 import ModelOverPiker from "./models/model-overpicker.js";
 import ViewOverPiker from "./views/view-overpicker.js";
 import ControllerOverPiker from "./controllers/controller-overpicker.js";
+import ViewQuickAdd from "./views/view-quick-add.js";
 
 //////////////////////
 // Start the APP
@@ -19,6 +20,10 @@ const calculator = new ControllerOverPiker(
     new ModelOverPiker(),
     new ViewOverPiker()
 );
+
+// Quick Add overlay (Q to open). Keystroke listener is global, so it works
+// regardless of where focus is, as long as no other input is focused.
+new ViewQuickAdd(calculator.model, calculator);
 
 //After the calculator is loaded we call the data from the API, this data is saved in local and then load in the model
 calculator.loadAPIJSON(API_URL, JSON_URL);
