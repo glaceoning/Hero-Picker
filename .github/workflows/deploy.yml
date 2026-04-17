@@ -3,6 +3,9 @@ name: Deploy Hero Picker to GitHub Pages
 on:
   push:
     branches: [main]
+  schedule:
+    # Daily refresh so the cached API snapshot doesn't go stale between pushes.
+    - cron: '17 4 * * *'
   workflow_dispatch:
 
 permissions:
@@ -44,6 +47,18 @@ jobs:
           cp -r public/images/. dist/images/
           if [ -f public/favicon.ico ]; then cp public/favicon.ico dist/favicon.ico; fi
           if [ -f public/robots.txt ]; then cp public/robots.txt dist/robots.txt; fi
+
+          # Pre-fetch API data. The live API (api.overpicker.com) does not send
+          # Access-Control-Allow-Origin, so browsers on github.io can't call it.
+          # The runner is a Linux box and isn't bound by CORS, so we snapshot
+          # the JSON at build time and calculator.js reads it from ./api/ on github.io.
+          mkdir -p dist/api
+          API="https://api.overpicker.com"
+          for path in map-info map-type hero-info hero-img hero-tiers \
+                      hero-counters hero-synergies hero-maps hero-adc version; do
+            echo "Fetching $path..."
+            curl -fsSL --retry 3 "$API/$path" -o "dist/api/$path"
+          done
 
           # Build Tailwind CSS. tailwind.config.js scans resources/ and public/**/*.js,
           # so Quick Add classes are picked up from public/js/views/view-quick-add.js.

@@ -6,11 +6,19 @@ gain something in the process is a plus.
 Feel free to alter this code to your liking, but please do not re-host it, do not profit from it and do not present it as your own.
 */
 
-import { API_URL, JSON_URL } from "./utils/constants.js";
+import { API_URL as DEFAULT_API_URL, JSON_URL } from "./utils/constants.js";
 import ModelOverPiker from "./models/model-overpicker.js";
 import ViewOverPiker from "./views/view-overpicker.js";
 import ControllerOverPiker from "./controllers/controller-overpicker.js";
 import ViewQuickAdd from "./views/view-quick-add.js";
+
+// The live API at api.overpicker.com does not send Access-Control-Allow-Origin,
+// so browsers on github.io block every request. The deploy workflow snapshots
+// the JSON into ./api/<endpoint> next to index.html; fetch from there instead.
+const IS_GITHUB_PAGES =
+    typeof window !== "undefined" &&
+    window.location.hostname.endsWith("github.io");
+const API_URL = IS_GITHUB_PAGES ? "api/" : DEFAULT_API_URL;
 
 //////////////////////
 // Start the APP

@@ -220,10 +220,6 @@ class ViewQuickAdd {
     }
 
     openOverlay() {
-        if (!this._hasHeroes()) {
-            // Heroes not loaded yet — silently ignore.
-            return;
-        }
         this.open = true;
         this.step = 1;
         this.team = null;
@@ -267,15 +263,29 @@ class ViewQuickAdd {
         }
     }
 
-    _hasHeroes() {
-        const blue = this.model && this.model.teams && this.model.teams["Blue"];
-        if (!blue || !blue.heroes) return false;
-        return Object.keys(blue.heroes).length > 0;
-    }
-
     _buildHeroList() {
-        const team = this.model.teams[this.team];
-        const heroes = team.heroes;
+        const team = this.model && this.model.teams && this.model.teams[this.team];
+        const heroes = team && team.heroes;
+        const heroCount = heroes ? Object.keys(heroes).length : 0;
+
+        this._heroTiles = {}; // name -> { tile, hero }
+
+        for (const role of ROLES) {
+            const { list } = this.roleSections[role];
+            while (list.firstChild) list.removeChild(list.firstChild);
+        }
+
+        if (heroCount === 0) {
+            // API data never arrived. Show a visible message instead of an empty grid
+            // so the user understands what's wrong.
+            const { list } = this.roleSections["Tank"];
+            const msg = document.createElement("div");
+            msg.className = "text-amber-400 poppins text-sm py-4";
+            msg.textContent =
+                "Hero data failed to load. Check your connection and reload the page.";
+            list.appendChild(msg);
+            return;
+        }
 
         const byRole = { Tank: [], Damage: [], Support: [] };
         for (const name in heroes) {
@@ -286,10 +296,8 @@ class ViewQuickAdd {
             byRole[role].sort((a, b) => a.name.localeCompare(b.name));
         }
 
-        this._heroTiles = {}; // name -> { tile, hero }
         for (const role of ROLES) {
             const { list } = this.roleSections[role];
-            while (list.firstChild) list.removeChild(list.firstChild);
 
             for (const hero of byRole[role]) {
                 const tile = this._makeHeroTile(hero);
@@ -332,7 +340,13 @@ class ViewQuickAdd {
     _refreshList() {
         this.queryEl.textContent = this.query.length > 0 ? this.query : "\u00A0"; // nbsp to preserve height
 
-        const team = this.model.teams[this.team];
+        const team = this.model && this.model.teams && this.model.teams[this.team];
+        if (!team || !team.heroes || Object.keys(team.heroes).length === 0) {
+            // Empty-state message from _buildHeroList is showing; no matches to iterate.
+            this.matches = [];
+            this.activeIdx = 0;
+            return;
+        }
         const q = this.query.toLowerCase();
 
         // Build matches per role in alphabetical (display) order; dim or hide selected heroes.
@@ -343,6 +357,7 @@ class ViewQuickAdd {
             // list.children order IS the alphabetical order established in _buildHeroList.
             for (const tile of list.children) {
                 const name = tile.dataset.name;
+                if (!name) continue; // skip non-hero rows (e.g. empty-state message)
                 const hero = team.heroes[name];
                 const visible = this._heroMatches(hero, q);
 
