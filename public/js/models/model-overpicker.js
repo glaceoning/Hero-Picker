@@ -68,6 +68,13 @@ class ModelOverPiker {
                 selectedHeroes: ["None", "None", "None", "None", "None"],
             },
         ];
+        this.bannedHeroes =
+            JSON.parse(localStorage.getItem("bannedHeroes")) || [];
+        if (!Array.isArray(this.bannedHeroes)) {
+            this.bannedHeroes = [];
+        } else if (this.bannedHeroes.length > 4) {
+            this.bannedHeroes = this.bannedHeroes.slice(0, 4);
+        }
 
         //The pre-saved APIdata from localstorage are loaded first into the model before calling the API
         this.APIData.loadLocalStorage(this);
@@ -362,7 +369,11 @@ class ModelOverPiker {
 
             for (let selected in selectedHeroes) {
                 if (selectedHeroes[selected] != "None") {
-                    this.teams[team].selectHero(selectedHeroes[selected]);
+                    if (this.bannedHeroes.includes(selectedHeroes[selected])) {
+                        selectedHeroesTeam.selectedHeroes[selected] = "None";
+                    } else {
+                        this.teams[team].selectHero(selectedHeroes[selected]);
+                    }
                 }
             }
         }
@@ -598,8 +609,9 @@ class ModelOverPiker {
 
     _commitSelectedHeroes(teams, selectedHeroes) {
         //Save the changes of Selected Heroes on the local storage
-        this.onSelectedHeroesChanged(teams, selectedHeroes);
+        this.onSelectedHeroesChanged(teams, selectedHeroes, this.bannedHeroes);
         localStorage.setItem("selectedHeroes", JSON.stringify(selectedHeroes));
+        localStorage.setItem("bannedHeroes", JSON.stringify(this.bannedHeroes));
     }
 
     //Flip the option panel
@@ -715,6 +727,10 @@ class ModelOverPiker {
     }
 
     editSelectedHeroes(team, hero, role) {
+        if (hero && this.bannedHeroes.includes(hero)) {
+            return;
+        }
+
         //If Role Lock selected and role exists
         if (this.panelOptions[this.ROLE_LOCK].state && role) {
             //If Role Lock selected check amount of Tank, Damage and Supports to fill 1Tank-2Damage-2Supports or 2tanks if 6vs6
@@ -832,6 +848,34 @@ class ModelOverPiker {
             this._commitSelectedHeroes(this.teams, this.selectedHeroes);
         }
     }
+
+    editBannedHeroes(hero) {
+        if (!hero || hero == "None") {
+            return;
+        }
+
+        const found = this.bannedHeroes.indexOf(hero);
+
+        if (found != -1) {
+            this.bannedHeroes.splice(found, 1);
+        } else {
+            if (this.bannedHeroes.length >= 4) {
+                return;
+            }
+            this.bannedHeroes.push(hero);
+        }
+
+        this.selectedHeroes = this.selectedHeroes.map(function (selector) {
+            selector.selectedHeroes = selector.selectedHeroes.map(
+                (selectedHero) => (selectedHero == hero ? "None" : selectedHero)
+            );
+            return selector;
+        });
+
+        this.loadSelectedHeroes();
+        this._commitSelectedHeroes(this.teams, this.selectedHeroes);
+    }
+
     rotateHeroBorder(team, heroName) {
         // Rotate the border state for the specified hero
         if (this.teams[team] && this.teams[team].heroes[heroName]) {

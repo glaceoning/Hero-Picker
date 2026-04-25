@@ -3,7 +3,7 @@ Quick Add overlay — keyboard-first hero picker.
 
 Flow:
     Q           open overlay (step 1: team select)
-    1 / 2       pick Ally / Enemy team (step 2: hero list)
+    1 / 2 / 3   pick Ally / Enemy / Bans (step 2: hero list)
     typing      filter heroes live; best match highlighted
     Enter       add highlighted hero, clear filter (stay open)
     Esc         close overlay
@@ -21,7 +21,7 @@ class ViewQuickAdd {
 
         this.open = false;
         this.step = 1;           // 1 = team select, 2 = hero pick
-        this.team = null;        // "Blue" | "Red"
+        this.team = null;        // "Blue" | "Red" | "Bans"
         this.query = "";
         this.matches = [];       // flat list of hero names currently visible, in display order
         this.activeIdx = 0;      // index into this.matches for Enter
@@ -62,13 +62,15 @@ class ViewQuickAdd {
 
         // --- Step 1: team select ---
         this.step1 = document.createElement("div");
-        this.step1.className = "grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6";
+        this.step1.className = "grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6";
 
         this.allyBtn = this._teamButton("Ally Team", "1", "bg-sky-600", "hover:bg-sky-500");
         this.enemyBtn = this._teamButton("Enemy Team", "2", "bg-red-600", "hover:bg-red-500");
+        this.bansBtn = this._teamButton("Hero Bans", "3", "bg-slate-600", "hover:bg-slate-500");
         this.allyBtn.addEventListener("click", () => this._pickTeam("Blue"));
         this.enemyBtn.addEventListener("click", () => this._pickTeam("Red"));
-        this.step1.append(this.allyBtn, this.enemyBtn);
+        this.bansBtn.addEventListener("click", () => this._pickTeam("Bans"));
+        this.step1.append(this.allyBtn, this.enemyBtn, this.bansBtn);
 
         // --- Step 2: hero pick ---
         this.step2 = document.createElement("div");
@@ -112,6 +114,11 @@ class ViewQuickAdd {
         document.body.appendChild(root);
         this.root = root;
         this.panel = panel;
+
+        const heroBansBtn = document.getElementById("hero-bans-button");
+        if (heroBansBtn) {
+            heroBansBtn.addEventListener("click", () => this.openOverlay("Bans"));
+        }
     }
 
     _teamButton(label, keyHint, bg, hoverBg) {
@@ -163,6 +170,9 @@ class ViewQuickAdd {
             } else if (e.key === "2") {
                 e.preventDefault();
                 this._pickTeam("Red");
+            } else if (e.key === "3") {
+                e.preventDefault();
+                this._pickTeam("Bans");
             }
             return;
         }
@@ -219,13 +229,19 @@ class ViewQuickAdd {
         return false;
     }
 
-    openOverlay() {
+    openOverlay(startTeam) {
         this.open = true;
         this.step = 1;
         this.team = null;
         this.query = "";
         this.activeIdx = 0;
         this.root.classList.remove("hidden");
+
+        if (startTeam) {
+            this._pickTeam(startTeam);
+            return;
+        }
+
         this._renderStep();
     }
 
@@ -245,26 +261,30 @@ class ViewQuickAdd {
     _renderStep() {
         if (this.step === 1) {
             this.titleEl.textContent = "Quick Add — Pick a Team";
-            this.subtitleEl.textContent = "Press 1 for Ally, 2 for Enemy — or click.";
+            this.subtitleEl.textContent = "Press 1 for Ally, 2 for Enemy, 3 for Bans — or click.";
             this.step1.classList.remove("hidden");
             this.step2.classList.add("hidden");
             this.footerEl.textContent = "Esc to close";
         } else {
-            const label = this.team === "Blue" ? "Ally" : "Enemy";
-            this.titleEl.textContent = `Add to ${label} Team`;
-            this.subtitleEl.textContent =
-                "Type to filter. Enter adds the highlighted hero. Tab / ← → to switch. Esc to close.";
+            const isBans = this.team === "Bans";
+            const label = this.team === "Blue" ? "Ally" : this.team === "Red" ? "Enemy" : "Hero Bans";
+            this.titleEl.textContent = isBans ? "Select Hero Bans" : `Add to ${label} Team`;
+            this.subtitleEl.textContent = isBans
+                ? "Type to filter. Enter toggles ban. Max 4 banned heroes. Esc to close."
+                : "Type to filter. Enter adds the highlighted hero. Tab / ← → to switch. Esc to close.";
             this.step1.classList.add("hidden");
             this.step2.classList.remove("hidden");
-            this.footerEl.textContent =
-                "Heroes grouped by role, alphabetical. Selected heroes are dimmed.";
+            this.footerEl.textContent = isBans
+                ? "Banned heroes are dimmed everywhere and cannot be selected by either team."
+                : "Heroes grouped by role, alphabetical. Selected or banned heroes are dimmed.";
             this._buildHeroList();
             this._refreshList();
         }
     }
 
     _buildHeroList() {
-        const team = this.model && this.model.teams && this.model.teams[this.team];
+        const sourceTeam = this.team === "Bans" ? "Blue" : this.team;
+        const team = this.model && this.model.teams && this.model.teams[sourceTeam];
         const heroes = team && team.heroes;
         const heroCount = heroes ? Object.keys(heroes).length : 0;
 
@@ -302,7 +322,7 @@ class ViewQuickAdd {
             for (const hero of byRole[role]) {
                 const tile = this._makeHeroTile(hero);
                 tile.addEventListener("click", () => {
-                    if (hero.selected) return;
+                    if (this.team !== "Bans" && hero.selected) return;
                     this._addHero(hero);
                 });
                 list.appendChild(tile);
@@ -340,7 +360,8 @@ class ViewQuickAdd {
     _refreshList() {
         this.queryEl.textContent = this.query.length > 0 ? this.query : "\u00A0"; // nbsp to preserve height
 
-        const team = this.model && this.model.teams && this.model.teams[this.team];
+        const sourceTeam = this.team === "Bans" ? "Blue" : this.team;
+        const team = this.model && this.model.teams && this.model.teams[sourceTeam];
         if (!team || !team.heroes || Object.keys(team.heroes).length === 0) {
             // Empty-state message from _buildHeroList is showing; no matches to iterate.
             this.matches = [];
@@ -359,13 +380,26 @@ class ViewQuickAdd {
                 const name = tile.dataset.name;
                 if (!name) continue; // skip non-hero rows (e.g. empty-state message)
                 const hero = team.heroes[name];
+                const isBanned =
+                    Array.isArray(this.model.bannedHeroes) &&
+                    this.model.bannedHeroes.includes(name);
                 const visible = this._heroMatches(hero, q);
+                const maxBansReached =
+                    this.team === "Bans" &&
+                    !isBanned &&
+                    this.model.bannedHeroes.length >= 4;
+                const disabled =
+                    this.team === "Bans"
+                        ? maxBansReached
+                        : hero.selected || isBanned;
 
                 tile.classList.toggle("hidden", !visible);
-                tile.classList.toggle("opacity-30", !!hero.selected);
-                tile.classList.toggle("pointer-events-none", !!hero.selected);
+                tile.classList.toggle("opacity-30", disabled || isBanned);
+                tile.classList.toggle("pointer-events-none", disabled);
+                tile.classList.toggle("border-red-400", isBanned);
+                tile.classList.toggle("bg-[#3a2c31]", isBanned);
 
-                if (visible && !hero.selected) {
+                if (visible && !disabled) {
                     if (q && name.toLowerCase().startsWith(q)) starts.push(name);
                     else rest.push(name);
                 }
@@ -413,14 +447,31 @@ class ViewQuickAdd {
     _commitSelected() {
         const name = this.matches[this.activeIdx];
         if (!name) return;
+        if (this.team === "Bans") {
+            this.controller.handleBannedHeroes(name);
+            this._refreshList();
+            return;
+        }
+
         const team = this.model.teams[this.team];
         const hero = team.heroes[name];
-        if (!hero || hero.selected) return;
+        if (
+            !hero ||
+            hero.selected ||
+            (Array.isArray(this.model.bannedHeroes) &&
+                this.model.bannedHeroes.includes(name))
+        ) {
+            return;
+        }
         this._addHero(hero);
     }
 
     _addHero(hero) {
-        this.controller.handleSelectedHeroes(this.team, hero.name, hero.generalRol);
+        if (this.team === "Bans") {
+            this.controller.handleBannedHeroes(hero.name);
+        } else {
+            this.controller.handleSelectedHeroes(this.team, hero.name, hero.generalRol);
+        }
         this.query = "";
         this._refreshList();
     }
