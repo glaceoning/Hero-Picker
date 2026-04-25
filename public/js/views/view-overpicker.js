@@ -38,6 +38,27 @@ class ViewOverPiker {
             "md:text-xl"
         );
         this.clearSelection.textContent = "Clear All";
+        this.heroBansButton = this.createElement("button", "", "hero-bans-button");
+        this.heroBansButton.type = "button";
+        this.heroBansButton.classList.add(
+            "text-center",
+            "mt-2",
+            "mb-4",
+            "mx-auto",
+            "px-4",
+            "py-2",
+            "rounded-md",
+            "border",
+            "border-amber-400/70",
+            "bg-[#294452]",
+            "hover:bg-[#35596b]",
+            "transition-colors",
+            "sm:col-span-3",
+            "poppins",
+            "text-sm",
+            "sm:text-base"
+        );
+        this.heroBansButton.textContent = "Hero Bans (0/4)";
 
         //Selection and Option Panels
         this.checkboxPanel = this.createElement(
@@ -250,6 +271,7 @@ class ViewOverPiker {
         this.redSupportRolSelection.classList.add("enemy-team-direction");
 
         this.calculator.append(this.clearSelection);
+        this.calculator.append(this.heroBansButton);
 
         this.calculator.append(this.checkboxPanel);
         this.calculator.append(this.selectionPanel);
@@ -285,7 +307,7 @@ class ViewOverPiker {
         );
         hint.innerHTML =
             'Press <kbd class="px-1.5 py-0.5 border border-slate-500 rounded text-xs">Q</kbd> ' +
-            'to Quick Add heroes by keyboard.';
+            'to Quick Add heroes by keyboard (1 Ally, 2 Enemy, 3 Bans).';
         this.calculator.append(hint);
     }
 
@@ -713,7 +735,7 @@ class ViewOverPiker {
         }
     }
 
-    displayHeroRoles(teams, iconOption) {
+    displayHeroRoles(teams, iconOption, bannedHeroes = []) {
         while (this.blueTankRolSelection.firstChild) {
             this.blueTankRolSelection.removeChild(
                 this.blueTankRolSelection.firstChild
@@ -936,6 +958,12 @@ class ViewOverPiker {
                     );
 
                     const figHero = figHeroOption;
+                    const isBanned = bannedHeroes.includes(hero.name);
+
+                    if (isBanned) {
+                        figHero.classList.add("opacity-30", "pointer-events-none");
+                        figHero.title = "Hero banned for this match";
+                    }
 
                     if (role == "Tank") {
                         if (teams[t].isRoleFiltered(role) && hero.filtered) {
@@ -983,10 +1011,11 @@ class ViewOverPiker {
         }
     }
 
-    displayTeams(teams, selectedHeroes, iconOption) {
+    displayTeams(teams, selectedHeroes, iconOption, bannedHeroes = []) {
+        this.heroBansButton.textContent = `Hero Bans (${bannedHeroes.length}/4)`;
         this.displayTeamScores(teams);
         this.displaySelectedHeroes(teams, selectedHeroes, iconOption);
-        this.displayHeroRoles(teams, iconOption);
+        this.displayHeroRoles(teams, iconOption, bannedHeroes);
     }
 
     bindClearSelection(handler) {

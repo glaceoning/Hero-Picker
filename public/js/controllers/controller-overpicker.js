@@ -44,7 +44,8 @@ class ControllerOverPiker {
         );
         this.onSelectedHeroesChanged(
             this.model.teams,
-            this.model.selectedHeroes
+            this.model.selectedHeroes,
+            this.model.bannedHeroes
         );
         this.onSelectionsChanged(
             this.model.panelSelections,
@@ -66,13 +67,13 @@ class ControllerOverPiker {
         this.view.displaySelections(panelSelections, gearOptionsState);
     };
 
-    onSelectedHeroesChanged = (teams, selectedHeroes) => {
+    onSelectedHeroesChanged = (teams, selectedHeroes, bannedHeroes = []) => {
         let selectedIcon = 0;
         if (this.model.panelSelections[4]) {
             selectedIcon = this.model.panelSelections[4].selectedIndex;
         }
         let iconOption = this.model.panelSelections[4].options[selectedIcon];
-        this.view.displayTeams(teams, selectedHeroes, iconOption);
+        this.view.displayTeams(teams, selectedHeroes, iconOption, bannedHeroes);
     };
 
     handleClearSelection = () => {
@@ -91,6 +92,8 @@ class ControllerOverPiker {
                 }
             }
         }
+
+        this.model.clearBannedHeroes();
     };
 
     handleToggleOptions = (id) => {
@@ -113,12 +116,17 @@ class ControllerOverPiker {
         this.model.editSelectedHeroes(team, hero, role);
     };
 
+    handleBannedHeroes = (hero) => {
+        this.model.editBannedHeroes(hero);
+    };
+
     handleBorderRotation = (team, hero) => {
         this.model.rotateHeroBorder(team, hero);
         // Refresh the display to show the updated border
         this.onSelectedHeroesChanged(
             this.model.teams,
-            this.model.selectedHeroes
+            this.model.selectedHeroes,
+            this.model.bannedHeroes
         );
     };
 
@@ -136,7 +144,8 @@ class ControllerOverPiker {
         );
         this.onSelectedHeroesChanged(
             this.model.teams,
-            this.model.selectedHeroes
+            this.model.selectedHeroes,
+            this.model.bannedHeroes
         );
         this.onSelectionsChanged(
             this.model.panelSelections,
