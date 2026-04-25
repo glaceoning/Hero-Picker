@@ -37,6 +37,7 @@ class ViewQuickAdd {
             "hidden fixed inset-0 z-50 bg-black/85 overflow-y-auto " +
             "flex items-start justify-center py-8 px-4";
         root.setAttribute("role", "dialog");
+        root.setAttribute("aria-modal", "true");
         root.setAttribute("aria-label", "Quick Add");
 
         // Click on backdrop closes
@@ -230,6 +231,7 @@ class ViewQuickAdd {
     }
 
     openOverlay(startTeam) {
+        this._previouslyFocused = document.activeElement;
         this.open = true;
         this.step = 1;
         this.team = null;
@@ -248,6 +250,10 @@ class ViewQuickAdd {
     close() {
         this.open = false;
         this.root.classList.add("hidden");
+        if (this._previouslyFocused) {
+            this._previouslyFocused.focus();
+            this._previouslyFocused = null;
+        }
     }
 
     _pickTeam(team) {

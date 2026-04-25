@@ -14,7 +14,7 @@ class ModelMapType {
     }
 
     getType(point) {
-        this.pointsType[point];
+        return this.pointsType[point];
     }
 
     getPointsLenght() {

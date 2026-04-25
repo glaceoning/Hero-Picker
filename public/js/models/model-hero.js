@@ -23,7 +23,7 @@ class ModelHero {
         this.name = heroData["name"];
         this.generalRol = heroData["general_rol"];
         this.nicks = heroData["nicks"];
-        this.onRotation = heroData["on_rotation"];
+        this.onRotation = heroData["on_rotation"]; //NOTE: Loaded but unused -- no code filters by rotation status
         this.IMG = [];
 
         this.tiers = [];

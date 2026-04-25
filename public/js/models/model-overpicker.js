@@ -20,7 +20,7 @@ class ModelOverPiker {
         this.TIER_MODE = 1;
         this.FIVE_VS_FIVE = 2;
         this.MAP_POOLS = 3;
-        this.HERO_ROTATION = 4;
+        this.HERO_ROTATION = 4; //NOTE: Rotation filtering is not implemented. onRotation data is loaded but never used to filter heroes.
         this.WEIGHTED_SCORES = 5;
 
         //General
@@ -55,6 +55,11 @@ class ModelOverPiker {
         this.checkTeamSize();
         this.checkHiddenState();
 
+        //One-time cleanup of stale localStorage key from earlier versions
+        if (localStorage.getItem("panelSelection")) {
+            localStorage.removeItem("panelSelection");
+        }
+
         //This map the size of the teams and the heroes selected in the team panel, initial selection is "None" for all heroes and 5v5
         this.selectedHeroes = JSON.parse(
             localStorage.getItem("selectedHeroes")
@@ -82,10 +87,18 @@ class ModelOverPiker {
 
     checkDate() {
         //To avoid problems with data previously stored in the local storage, we check the date of the last
-        // update and clear the local storage if the date is different
+        // update and clear stale API cache if the date is different
         let savedDate = localStorage.getItem("savedDate");
         if (savedDate != LASTUPDATE) {
-            localStorage.clear();
+            //Only remove API cache keys; preserve user preferences
+            const apiKeys = [
+                "mapInfo", "mapTypes", "heroInfo", "heroIMG",
+                "heroTiers", "heroCounters", "heroSynergies",
+                "heroMaps", "heroADC", "version", "savedDate"
+            ];
+            for (const key of apiKeys) {
+                localStorage.removeItem(key);
+            }
         }
         localStorage.setItem("savedDate", LASTUPDATE);
     }
@@ -123,14 +136,14 @@ class ModelOverPiker {
     checkHiddenState() {
         if (!this.panelOptions[this.MAP_POOLS].hidden) {
             localStorage.removeItem("panelOptions");
-            localStorage.removeItem("panelSelection");
+            localStorage.removeItem("panelSelections");
             this.panelOptions = this.buildPanelOptions();
             this.panelSelections = this.buildPanelSelections();
         }
 
         if (!this.panelSelections[4]) {
             localStorage.removeItem("panelOptions");
-            localStorage.removeItem("panelSelection");
+            localStorage.removeItem("panelSelections");
             this.panelOptions = this.buildPanelOptions();
             this.panelSelections = this.buildPanelSelections();
         }
@@ -425,132 +438,92 @@ class ModelOverPiker {
         }
 
         //Now we calculate scores for teams and their heroes
-        this.teams["Blue"].calcScores(
-            tier,
-            map,
-            point,
-            adc,
-            mapType,
-            pointType,
-            this.teams["Red"].selectedHeroes,
-            isWeighted
-        );
-        this.teams["Red"].calcEchoScores(
-            tier,
-            map,
-            point,
-            adc,
-            mapType,
-            pointType,
-            this.teams["Blue"].selectedHeroes,
-            isWeighted
-        );
-
-        //When blue team attack, red team deffends and viceversa
+        //Echo copies enemy heroes, so Echo scores use the enemy team's ADC perspective.
         if (adc == "Attack") {
+            this.teams["Blue"].calcScores(
+                tier, map, point, adc, mapType, pointType,
+                this.teams["Red"].selectedHeroes, isWeighted
+            );
             this.teams["Red"].calcScores(
-                tier,
-                map,
-                point,
-                "Defense",
-                mapType,
-                pointType,
-                this.teams["Blue"].selectedHeroes,
-                isWeighted
+                tier, map, point, "Defense", mapType, pointType,
+                this.teams["Blue"].selectedHeroes, isWeighted
+            );
+            this.teams["Red"].calcEchoScores(
+                tier, map, point, adc, mapType, pointType,
+                this.teams["Blue"].selectedHeroes, isWeighted
             );
             this.teams["Blue"].calcEchoScores(
-                tier,
-                map,
-                point,
-                adc,
-                mapType,
-                pointType,
-                this.teams["Red"].selectedHeroes,
-                isWeighted
+                tier, map, point, "Defense", mapType, pointType,
+                this.teams["Red"].selectedHeroes, isWeighted
             );
         } else if (adc == "Defense") {
+            this.teams["Blue"].calcScores(
+                tier, map, point, adc, mapType, pointType,
+                this.teams["Red"].selectedHeroes, isWeighted
+            );
             this.teams["Red"].calcScores(
-                tier,
-                map,
-                point,
-                "Attack",
-                mapType,
-                pointType,
-                this.teams["Blue"].selectedHeroes,
-                isWeighted
+                tier, map, point, "Attack", mapType, pointType,
+                this.teams["Blue"].selectedHeroes, isWeighted
+            );
+            this.teams["Red"].calcEchoScores(
+                tier, map, point, adc, mapType, pointType,
+                this.teams["Blue"].selectedHeroes, isWeighted
             );
             this.teams["Blue"].calcEchoScores(
-                tier,
-                map,
-                point,
-                adc,
-                mapType,
-                pointType,
-                this.teams["Red"].selectedHeroes,
-                isWeighted
+                tier, map, point, "Attack", mapType, pointType,
+                this.teams["Red"].selectedHeroes, isWeighted
             );
         } else if (adc == "A-Team") {
+            this.teams["Blue"].calcScores(
+                tier, map, point, adc, mapType, pointType,
+                this.teams["Red"].selectedHeroes, isWeighted
+            );
             this.teams["Red"].calcScores(
-                tier,
-                map,
-                point,
-                "E-Team",
-                mapType,
-                pointType,
-                this.teams["Blue"].selectedHeroes,
-                isWeighted
+                tier, map, point, "E-Team", mapType, pointType,
+                this.teams["Blue"].selectedHeroes, isWeighted
+            );
+            this.teams["Red"].calcEchoScores(
+                tier, map, point, adc, mapType, pointType,
+                this.teams["Blue"].selectedHeroes, isWeighted
             );
             this.teams["Blue"].calcEchoScores(
-                tier,
-                map,
-                point,
-                adc,
-                mapType,
-                pointType,
-                this.teams["Red"].selectedHeroes,
-                isWeighted
+                tier, map, point, "E-Team", mapType, pointType,
+                this.teams["Red"].selectedHeroes, isWeighted
             );
-        } else if (adc == "A-Team") {
+        } else if (adc == "E-Team") {
+            this.teams["Blue"].calcScores(
+                tier, map, point, adc, mapType, pointType,
+                this.teams["Red"].selectedHeroes, isWeighted
+            );
             this.teams["Red"].calcScores(
-                tier,
-                map,
-                point,
-                "A-Team",
-                mapType,
-                pointType,
-                this.teams["Blue"].selectedHeroes,
-                isWeighted
+                tier, map, point, "A-Team", mapType, pointType,
+                this.teams["Blue"].selectedHeroes, isWeighted
+            );
+            this.teams["Red"].calcEchoScores(
+                tier, map, point, adc, mapType, pointType,
+                this.teams["Blue"].selectedHeroes, isWeighted
             );
             this.teams["Blue"].calcEchoScores(
-                tier,
-                map,
-                point,
-                adc,
-                mapType,
-                pointType,
-                this.teams["Red"].selectedHeroes,
-                isWeighted
+                tier, map, point, "A-Team", mapType, pointType,
+                this.teams["Red"].selectedHeroes, isWeighted
             );
         } else {
+            //Symmetric modes (Control, Flashpoint, Push, or "None")
+            this.teams["Blue"].calcScores(
+                tier, map, point, adc, mapType, pointType,
+                this.teams["Red"].selectedHeroes, isWeighted
+            );
             this.teams["Red"].calcScores(
-                tier,
-                map,
-                point,
-                adc,
-                mapType,
-                pointType,
-                this.teams["Blue"].selectedHeroes,
-                isWeighted
+                tier, map, point, adc, mapType, pointType,
+                this.teams["Blue"].selectedHeroes, isWeighted
+            );
+            this.teams["Red"].calcEchoScores(
+                tier, map, point, adc, mapType, pointType,
+                this.teams["Blue"].selectedHeroes, isWeighted
             );
             this.teams["Blue"].calcEchoScores(
-                tier,
-                map,
-                point,
-                adc,
-                mapType,
-                pointType,
-                this.teams["Red"].selectedHeroes,
-                isWeighted
+                tier, map, point, adc, mapType, pointType,
+                this.teams["Red"].selectedHeroes, isWeighted
             );
         }
     }
@@ -680,7 +653,7 @@ class ModelOverPiker {
             //This avoid problems when maps have different amount of points
             mapType = this.maps[map].type;
 
-            let points = this.mapTypes[mapType].getPointsLenght() - 1;
+            let points = this.mapTypes[mapType].getPointsLenght();
 
             if (points < pointNumber) {
                 this.panelSelections[2].selectedIndex = points;
@@ -713,7 +686,14 @@ class ModelOverPiker {
                 this.panelOptions[this.FIVE_VS_FIVE].state &&
                 team.selectedHeroes.length == 6
             ) {
-                team.selectedHeroes.pop();
+                //Preserve the 6th hero if it's not "None"
+                let removed = team.selectedHeroes.pop();
+                if (removed != "None") {
+                    let noneIndex = team.selectedHeroes.indexOf("None");
+                    if (noneIndex != -1) {
+                        team.selectedHeroes[noneIndex] = removed;
+                    }
+                }
             } else if (
                 !this.panelOptions[this.FIVE_VS_FIVE].state &&
                 team.selectedHeroes.length == 5
@@ -726,127 +706,56 @@ class ModelOverPiker {
         this._commitSelectedHeroes(this.teams, this.selectedHeroes);
     }
 
+    refreshSelectedHeroes() {
+        this.loadSelectedHeroes();
+        this._commitSelectedHeroes(this.teams, this.selectedHeroes);
+    }
+
     editSelectedHeroes(team, hero, role) {
         if (hero && this.bannedHeroes.includes(hero)) {
             return;
         }
 
-        //If Role Lock selected and role exists
-        if (this.panelOptions[this.ROLE_LOCK].state && role) {
-            //If Role Lock selected check amount of Tank, Damage and Supports to fill 1Tank-2Damage-2Supports or 2tanks if 6vs6
-            let maxTanks = this.panelOptions[this.FIVE_VS_FIVE].state ? 0 : 1; //0 = 1 tank, 1 = 2 tanks
-
-            if (
-                this.teams[team].getRoleAmount(role) <= maxTanks &&
-                role == "Tank"
-            ) {
-                this.selectedHeroes = this.selectedHeroes.map(function (
-                    selector
-                ) {
-                    if (selector.team === team) {
-                        let found = selector.selectedHeroes.indexOf(hero);
-
-                        //-1 means they don't found the hero in the array of selectedHeroes
-                        if (found == -1) {
-                            let foundNone =
-                                selector.selectedHeroes.indexOf("None");
-                            if (foundNone != -1) {
-                                selector.selectedHeroes[foundNone] = hero;
-                            }
-                        } else {
-                            selector.selectedHeroes[found] = "None";
-                        }
-
-                        return selector;
-                    } else {
-                        return selector;
-                    }
-                });
-
-                this.loadSelectedHeroes();
-                this._commitSelectedHeroes(this.teams, this.selectedHeroes);
-            }
-            if (this.teams[team].getRoleAmount(role) <= 1 && role == "Damage") {
-                this.selectedHeroes = this.selectedHeroes.map(function (
-                    selector
-                ) {
-                    if (selector.team === team) {
-                        let found = selector.selectedHeroes.indexOf(hero);
-
-                        //-1 means they don't found the hero in the array of selectedHeroes
-                        if (found == -1) {
-                            let foundNone =
-                                selector.selectedHeroes.indexOf("None");
-                            if (foundNone != -1) {
-                                selector.selectedHeroes[foundNone] = hero;
-                            }
-                        } else {
-                            selector.selectedHeroes[found] = "None";
-                        }
-
-                        return selector;
-                    } else {
-                        return selector;
-                    }
-                });
-
-                this.loadSelectedHeroes();
-                this._commitSelectedHeroes(this.teams, this.selectedHeroes);
-            }
-            if (
-                this.teams[team].getRoleAmount(role) <= 1 &&
-                role == "Support"
-            ) {
-                this.selectedHeroes = this.selectedHeroes.map(function (
-                    selector
-                ) {
-                    if (selector.team === team) {
-                        let found = selector.selectedHeroes.indexOf(hero);
-
-                        //-1 means they don't found the hero in the array of selectedHeroes
-                        if (found == -1) {
-                            let foundNone =
-                                selector.selectedHeroes.indexOf("None");
-                            if (foundNone != -1) {
-                                selector.selectedHeroes[foundNone] = hero;
-                            }
-                        } else {
-                            selector.selectedHeroes[found] = "None";
-                        }
-
-                        return selector;
-                    } else {
-                        return selector;
-                    }
-                });
-
-                this.loadSelectedHeroes();
-                this._commitSelectedHeroes(this.teams, this.selectedHeroes);
-            }
-        } else {
-            this.selectedHeroes = this.selectedHeroes.map(function (selector) {
-                if (selector.team === team) {
-                    let found = selector.selectedHeroes.indexOf(hero);
-
-                    //-1 means they don't found the hero in the array of selectedHeroes
-                    if (found == -1) {
-                        let foundNone = selector.selectedHeroes.indexOf("None");
-                        if (foundNone != -1) {
-                            selector.selectedHeroes[foundNone] = hero;
-                        }
-                    } else {
-                        selector.selectedHeroes[found] = "None";
-                    }
-
-                    return selector;
-                } else {
-                    return selector;
-                }
-            });
-
-            this.loadSelectedHeroes();
-            this._commitSelectedHeroes(this.teams, this.selectedHeroes);
+        let isAlreadySelected = false;
+        let teamSelection = this.selectedHeroes.find(
+            (element) => element.team == team
+        );
+        if (teamSelection && teamSelection.selectedHeroes.includes(hero)) {
+            isAlreadySelected = true;
         }
+
+        //If Role Lock selected and role exists, check role cap before ADDING
+        if (this.panelOptions[this.ROLE_LOCK].state && role && !isAlreadySelected) {
+            let maxForRole = (role == "Tank")
+                ? (this.panelOptions[this.FIVE_VS_FIVE].state ? 0 : 1) : 1;
+
+            if (this.teams[team].getRoleAmount(role) > maxForRole) {
+                return;
+            }
+        }
+
+        //Toggle the hero (add or remove)
+        this.selectedHeroes = this.selectedHeroes.map(function (selector) {
+            if (selector.team === team) {
+                let found = selector.selectedHeroes.indexOf(hero);
+
+                if (found == -1) {
+                    let foundNone = selector.selectedHeroes.indexOf("None");
+                    if (foundNone != -1) {
+                        selector.selectedHeroes[foundNone] = hero;
+                    }
+                } else {
+                    selector.selectedHeroes[found] = "None";
+                }
+
+                return selector;
+            } else {
+                return selector;
+            }
+        });
+
+        this.loadSelectedHeroes();
+        this._commitSelectedHeroes(this.teams, this.selectedHeroes);
     }
 
     editBannedHeroes(hero) {
@@ -886,6 +795,8 @@ class ModelOverPiker {
         this._commitSelectedHeroes(this.teams, this.selectedHeroes);
     }
 
+    //NOTE: borderState is not persisted to localStorage, so border colors reset on reload.
+    //To persist, store a hero->borderState map in localStorage and restore it in loadSelectedHeroes.
     rotateHeroBorder(team, heroName) {
         // Rotate the border state for the specified hero
         if (this.teams[team] && this.teams[team].heroes[heroName]) {

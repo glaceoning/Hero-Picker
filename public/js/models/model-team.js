@@ -262,7 +262,7 @@ class ModelTeam {
         if (bestEchoValue > -20) {
             for (let h in this.heroes) {
                 let echoValue = this.heroes[h].echoValue;
-                if (bestEchoValue == echoValue) {
+                if (bestEchoValue == echoValue && this.heroes[h].selected) {
                     this.bestCopyHeroes.push(h);
                 }
             }
@@ -270,16 +270,14 @@ class ModelTeam {
     }
 
     isRoleFiltered(role) {
-        //Check if Hero is filtered and avoid cleaning the role that don't belongs to the hero
-        let isFiltered = false;
-
         for (let h in this.heroes) {
             let hero = this.heroes[h];
 
             if (hero.filtered && hero.generalRol == role) {
-                return !isFiltered;
+                return true;
             }
         }
+        return false;
     }
 
     getSortedHeroesNameperValue() {

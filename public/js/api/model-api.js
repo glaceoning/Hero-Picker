@@ -27,9 +27,9 @@ class ModelAPI {
         //This a temporal solution to fixing the charging of incorrect info to adc data
         if (!this.heroADC["Ana"]) {
             console.log(
-                "Trying to clearing incorrect data in the local storage"
+                "Incomplete ADC data detected; clearing stale API cache"
             );
-            localStorage.clear();
+            localStorage.removeItem("heroADC");
         }
     }
 
@@ -169,6 +169,24 @@ class ModelAPI {
 
                 localStorage.setItem("version", JSON.stringify(this.version));
                 controller.reloadControllerModel(this.version);
+            })
+            .catch((error) => {
+                console.error("API fetch failed:", error);
+                //Show user-visible error message
+                let errorDiv = document.getElementById("api-error-banner");
+                if (!errorDiv) {
+                    errorDiv = document.createElement("div");
+                    errorDiv.id = "api-error-banner";
+                    errorDiv.className =
+                        "fixed top-0 left-0 right-0 bg-red-700 text-white text-center " +
+                        "py-2 px-4 z-[100] poppins text-sm";
+                    errorDiv.textContent =
+                        "Failed to load some hero data. The picker may show incomplete results. " +
+                        "Try refreshing the page.";
+                    document.body.prepend(errorDiv);
+                }
+                //Still attempt to load whatever data we have so far
+                controller.reloadControllerModel({ "last-update": "Unknown" });
             });
     }
 

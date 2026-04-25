@@ -68,11 +68,11 @@ class ControllerOverPiker {
     };
 
     onSelectedHeroesChanged = (teams, selectedHeroes, bannedHeroes = []) => {
-        let selectedIcon = 0;
+        let iconOption = "Profile";
         if (this.model.panelSelections[4]) {
-            selectedIcon = this.model.panelSelections[4].selectedIndex;
+            let selectedIcon = this.model.panelSelections[4].selectedIndex || 0;
+            iconOption = this.model.panelSelections[4].options[selectedIcon];
         }
-        let iconOption = this.model.panelSelections[4].options[selectedIcon];
         this.view.displayTeams(teams, selectedHeroes, iconOption, bannedHeroes);
     };
 
@@ -100,7 +100,7 @@ class ControllerOverPiker {
         this.model.toggleOptionPanel(id);
         this.model.switchTeamSize(); //This switch the Team size if 5v5 is selected or not
         this.model.editSelected(); //This recharge the options if map pools are selected
-        this.model.editSelectedHeroes(); //This recharge the heroes if TierMode or Hero Rotation is activated
+        this.model.refreshSelectedHeroes(); //This recharge the heroes if TierMode or Hero Rotation is activated
     };
 
     handleGearOptions = () => {
@@ -109,7 +109,7 @@ class ControllerOverPiker {
 
     handleEditSelected = (id, selIndex) => {
         this.model.editSelected(id, selIndex);
-        this.model.editSelectedHeroes();
+        this.model.refreshSelectedHeroes();
     };
 
     handleSelectedHeroes = (team, hero, role) => {
