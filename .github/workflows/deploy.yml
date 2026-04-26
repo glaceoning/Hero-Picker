@@ -49,9 +49,9 @@ jobs:
           if [ -f public/robots.txt ]; then cp public/robots.txt dist/robots.txt; fi
 
           # Pre-fetch API data. The live API (api.overpicker.com) does not send
-          # Access-Control-Allow-Origin, so browsers on github.io can't call it.
+          # Access-Control-Allow-Origin, so browsers can't call it directly.
           # The runner is a Linux box and isn't bound by CORS, so we snapshot
-          # the JSON at build time and calculator.js reads it from ./api/ on github.io.
+          # the JSON at build time and calculator.js reads it from ./api/.
           mkdir -p dist/api
           API="https://api.overpicker.com"
           for path in map-info map-type hero-info hero-img hero-tiers \
