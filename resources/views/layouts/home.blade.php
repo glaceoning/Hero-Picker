@@ -12,6 +12,7 @@
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7835978513866271"
         crossorigin="anonymous"></script>
     <meta charset="UTF-8" />
+    <meta name="google-site-verification" content="CAQ7dHLgG2BYGxmYeUgYmNbq1QNoGQ8s1sU1h9P5Ajg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta http-equiv="X-UA-Compatible" content="ie=edge" />
     {{-- Favicon --}}
@@ -63,8 +64,10 @@
 
 <body class="abel bg-[#1C2E37] text-white my-0 mx-auto w-11/12 relative">
     <x-home.header />
-    @yield('content') @php$dates = include config_path('dates.php');
-                @endphp ?> ?> ?>
+    @yield('content')
+    @php
+        $dates = include config_path('dates.php');
+    @endphp
     <x-home.footer :dates="$dates" />
 </body>
 

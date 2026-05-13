@@ -175,6 +175,8 @@ class ModelHero {
                 }
             }
 
+            // Deprecated
+            /*
             if (adc != "None" && pointType != "None" && point != "None") {
                 if (pointType == "Control" || pointType == "Flashpoint") {
                     if (isWeighted) {
@@ -211,6 +213,7 @@ class ModelHero {
                     this.value += this.adc["General"][mapType];
                 }
             }
+            */
         }
 
         this.value += this.getSinergyValue(alliedHeroes, isWeighted); //Synergies Values
@@ -280,6 +283,8 @@ class ModelHero {
                     }
                 }
 
+                // Deprecated
+                /*
                 if (adc != "None" && pointType != "None" && point != "None") {
                     if (pointType == "Control" || pointType == "Flashpoint") {
                         if (isWeighted) {
@@ -323,6 +328,7 @@ class ModelHero {
                         this.echoValue += this.adc["General"][mapType];
                     }
                 }
+                */
             }
 
             this.echoValue += this.getSinergyValue(
